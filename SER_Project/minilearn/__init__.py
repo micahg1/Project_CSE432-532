@@ -1,13 +1,37 @@
 """
-MiniLearn — A minimal scikit-learn-style machine learning library.
+MiniLearn — A lightweight ML library built from scratch for CSE432/532.
 
-Built from scratch for educational purposes as part of the CSE 432/532
-Speech Emotion Recognition project.
+This package mirrors the scikit-learn API (fit / predict / score) and implements
+every required algorithm using only NumPy/SciPy.  Import examples:
 
-Usage:
-    from minilearn.classifiers import LogisticRegression, KNN, GaussianNaiveBayes, DecisionTreeClassifier
+    from minilearn.classifiers import LogisticRegression, KNearestNeighbors
     from minilearn.preprocessing import StandardScaler, train_test_split
-    from minilearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+    from minilearn.metrics import accuracy, confusion_matrix
+    from minilearn.validation import StratifiedKFold
+    from minilearn.clustering import KMeans
+    from minilearn.decomposition import PCA
+    from minilearn.ann import MLP
 """
 
+from . import (
+    preprocessing,
+    classifiers,
+    metrics,
+    validation,
+    clustering,
+    decomposition,
+    regression,
+    ann,
+)
+
 __version__ = "0.1.0"
+__all__ = [
+    "preprocessing",
+    "classifiers",
+    "metrics",
+    "validation",
+    "clustering",
+    "decomposition",
+    "regression",
+    "ann",
+]
