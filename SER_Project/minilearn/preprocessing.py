@@ -40,12 +40,23 @@ class StandardScaler:
     def fit(self, X):
         """Compute per-column mean and std from training data X."""
         # TODO: implement using np.mean and np.std along axis=0
-        raise NotImplementedError
+        X = np.asarray(X, dtype=float)
+        self.mean_ = np.mean(X, axis=0)
+        self.std_ = np.std(X, axis=0)
+        return self
 
     def transform(self, X):
         """Apply stored mean/std to X.  Must call fit() first."""
         # TODO: subtract mean_, divide by std_ (handle zero-std columns)
-        raise NotImplementedError
+        if self.mean_ is None or self.std_ is None:
+            raise ValueError("StandardScaler instance is not fitted yet. Call fit(X) first.")
+        X = np.asarray(X, dtype=float)
+
+        # Where std is 0, the feature is constant — just subtract the mean
+        # (result will be all zeros for that column, which is correct)
+        
+        safe_std = np.where(self.std_ == 0, 1.0, self.std_)
+        return (X - self.mean_) / safe_std
 
     def fit_transform(self, X):
         """Convenience: fit then transform in one call (training data only)."""
@@ -53,9 +64,9 @@ class StandardScaler:
 
     def inverse_transform(self, X):
         """Reverse the scaling: X * std_ + mean_"""
-        # TODO: implement
-        raise NotImplementedError
-
+        if self.mean_ is None:
+            raise RuntimeError("Call fit() before inverse_transform().")
+        return np.array(X, dtype=float) * self.std_ + self.mean_
 
 def train_test_split(X, y, test_size=0.2, random_state=None, stratify=False):
     """

@@ -14,9 +14,9 @@ every required algorithm using only NumPy/SciPy.  Import examples:
 """
 
 from . import (
-    preprocessing,
     classifiers,
     metrics,
+    preprocessing,
     validation,
     clustering,
     decomposition,
