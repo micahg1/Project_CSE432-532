@@ -37,7 +37,11 @@ import numpy as np
 
 class PCA:
     """
-    Principal Component Analysis via eigendecomposition of the covariance matrix.
+    Principal Component Analysis via SVD of the centered data matrix.
+
+    Using SVD on the (n_samples × n_features) centered matrix is numerically
+    more stable than eigendecomposing the covariance matrix directly, and is
+    faster when n_samples < n_features.
 
     Parameters
     ----------
@@ -48,7 +52,7 @@ class PCA:
     def __init__(self, n_components=None):
         self.n_components = n_components
         self.components_ = None           # shape (n_components, n_features)
-        self.explained_variance_ = None   # eigenvalues of top components
+        self.explained_variance_ = None   # variance captured by each component
         self.explained_variance_ratio_ = None
         self.mean_ = None
 
@@ -58,17 +62,37 @@ class PCA:
 
         Steps:
         1. Center X by subtracting the column mean.
-        2. Compute the covariance matrix (or use np.linalg.svd on centered X).
-        3. Sort eigenvectors by descending eigenvalue.
-        4. Store top n_components axes in self.components_.
+        2. Run full SVD on the centered matrix: X_c = U S Vt.
+        3. Principal axes  = rows of Vt  (right singular vectors).
+        4. Explained variance per component = s² / (n_samples - 1).
+        5. Keep only the top n_components axes.
         """
-        # TODO: implement using np.cov + np.linalg.eigh  (or np.linalg.svd)
-        raise NotImplementedError
+        X = np.asarray(X, dtype=float)
+        n_samples, n_features = X.shape
+
+        self.mean_ = X.mean(axis=0)
+        X_centered = X - self.mean_
+
+        # Full SVD — Vt rows are the principal axes, sorted by descending singular value
+        _, s, Vt = np.linalg.svd(X_centered, full_matrices=False)
+
+        # Explained variance: eigenvalues of the covariance matrix = s² / (n-1)
+        explained_var = (s ** 2) / (n_samples - 1)
+        total_var     = explained_var.sum()
+
+        # Determine number of components to keep
+        n_components = self.n_components if self.n_components is not None else n_features
+        n_components = min(n_components, n_features, n_samples)
+
+        self.components_               = Vt[:n_components]
+        self.explained_variance_       = explained_var[:n_components]
+        self.explained_variance_ratio_ = self.explained_variance_ / total_var
+        return self
 
     def transform(self, X):
         """Project X onto the stored principal axes."""
-        # TODO: center X using self.mean_, then dot with self.components_.T
-        raise NotImplementedError
+        X = np.asarray(X, dtype=float)
+        return (X - self.mean_) @ self.components_.T
 
     def fit_transform(self, X):
         """Fit on X then project X (use for training data only)."""
@@ -77,5 +101,4 @@ class PCA:
 
     def inverse_transform(self, X_reduced):
         """Reconstruct approximate original-space data from reduced representation."""
-        # TODO: X_reduced @ self.components_ + self.mean_
-        raise NotImplementedError
+        return np.asarray(X_reduced, dtype=float) @ self.components_ + self.mean_

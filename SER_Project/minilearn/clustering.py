@@ -55,23 +55,80 @@ class KMeans:
         self.labels_ = None
         self.inertia_ = None
 
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _distances_to_centers(self, X, centers):
+        """Return (n_samples, k) matrix of squared Euclidean distances."""
+        # ||x - c||^2 = ||x||^2 + ||c||^2 - 2 x·c^T  (faster than broadcasting)
+        X2 = np.sum(X ** 2, axis=1, keepdims=True)       # (n, 1)
+        C2 = np.sum(centers ** 2, axis=1)                 # (k,)
+        return X2 + C2 - 2.0 * (X @ centers.T)           # (n, k)
+
+    def _assign(self, X, centers):
+        """Return cluster labels: argmin distance to each centroid."""
+        return np.argmin(self._distances_to_centers(X, centers), axis=1)
+
+    def _inertia(self, X, labels, centers):
+        """Sum of squared distances from each point to its assigned centroid."""
+        dists = self._distances_to_centers(X, centers)
+        return float(np.sum(dists[np.arange(len(X)), labels]))
+
+    def _single_run(self, X, rng):
+        """One full Lloyd's run from a random initialisation."""
+        n_samples = X.shape[0]
+
+        # Step 1 — initialise: pick k distinct samples as centroids
+        init_idx = rng.choice(n_samples, size=self.k, replace=False)
+        centers  = X[init_idx].copy()
+
+        for _ in range(self.max_iter):
+            # Step 2 — assign
+            labels = self._assign(X, centers)
+
+            # Step 3 — recompute centroids (handle empty clusters by keeping old center)
+            new_centers = centers.copy()
+            for c in range(self.k):
+                members = X[labels == c]
+                if len(members) > 0:
+                    new_centers[c] = members.mean(axis=0)
+
+            # Step 4 — check convergence
+            shift = np.linalg.norm(new_centers - centers)
+            centers = new_centers
+            if shift < self.tol:
+                break
+
+        labels  = self._assign(X, centers)
+        inertia = self._inertia(X, labels, centers)
+        return centers, labels, inertia
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
     def fit(self, X):
         """
         Run Lloyd's algorithm n_init times and keep the run with lowest inertia.
-
-        Steps per run:
-        1. Randomly pick k samples as initial centroids.
-        2. Assign each point to nearest centroid (Euclidean distance).
-        3. Recompute centroids as mean of assigned points.
-        4. Repeat 2–3 until centroid shift < tol or max_iter reached.
         """
-        # TODO: implement _single_run helper; loop n_init times; store best result
-        raise NotImplementedError
+        X   = np.asarray(X, dtype=float)
+        rng = np.random.default_rng(self.random_state)
+
+        best_centers = best_labels = best_inertia = None
+
+        for _ in range(self.n_init):
+            centers, labels, inertia = self._single_run(X, rng)
+            if best_inertia is None or inertia < best_inertia:
+                best_centers = centers
+                best_labels  = labels
+                best_inertia = inertia
+
+        self.cluster_centers_ = best_centers
+        self.labels_          = best_labels
+        self.inertia_         = best_inertia
+        return self
 
     def predict(self, X):
         """Assign each sample in X to its nearest stored centroid."""
-        # TODO: compute distances to self.cluster_centers_, return argmin
-        raise NotImplementedError
+        X = np.asarray(X, dtype=float)
+        return self._assign(X, self.cluster_centers_)
 
     def fit_predict(self, X):
         self.fit(X)
