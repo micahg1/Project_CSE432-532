@@ -68,21 +68,51 @@ class StandardScaler:
             raise RuntimeError("Call fit() before inverse_transform().")
         return np.array(X, dtype=float) * self.std_ + self.mean_
 
+
 def train_test_split(X, y, test_size=0.2, random_state=None, stratify=False):
     """
     Split X and y into random train/test subsets.
 
     Parameters
     ----------
-    X : np.ndarray, shape (n_samples, n_features)
-    y : np.ndarray, shape (n_samples,)
-    test_size : float, fraction of samples for test set (default 0.2)
+    X            : np.ndarray, shape (n_samples, n_features)
+    y            : np.ndarray, shape (n_samples,)
+    test_size    : float, fraction of samples for test set (default 0.2)
     random_state : int or None, seed for reproducibility
-    stratify : bool, if True maintain class proportions in each split
+    stratify     : bool, if True maintain class proportions in each split
 
     Returns
     -------
     X_train, X_test, y_train, y_test
     """
-    # TODO: implement — handle both stratified and random splits
-    raise NotImplementedError
+    X   = np.array(X)
+    y   = np.array(y)
+    rng = np.random.default_rng(random_state)
+
+    if not stratify:
+        n_samples = len(X)
+        n_test    = int(np.ceil(n_samples * test_size))
+
+        indices   = rng.permutation(n_samples)
+        test_idx  = indices[:n_test]
+        train_idx = indices[n_test:]
+
+    else:
+        train_idx = []
+        test_idx  = []
+
+        for class_label in np.unique(y):
+            class_indices = np.where(y == class_label)[0]
+            class_indices = rng.permutation(class_indices)
+
+            n_class_test  = max(1, int(np.ceil(len(class_indices) * test_size)))
+            test_idx.append(class_indices[:n_class_test])
+            train_idx.append(class_indices[n_class_test:])
+
+        train_idx = np.concatenate(train_idx)
+        test_idx  = np.concatenate(test_idx)
+
+        train_idx = rng.permutation(train_idx)
+        test_idx  = rng.permutation(test_idx)
+
+    return X[train_idx], X[test_idx], y[train_idx], y[test_idx]
