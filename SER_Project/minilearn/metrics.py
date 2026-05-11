@@ -158,7 +158,7 @@ def roc_auc_score(y_true, y_score):
         # Prepend origin and compute trapezoidal area
         tpr = np.concatenate([[0.0], tpr])
         fpr = np.concatenate([[0.0], fpr])
-        aucs.append(np.trapz(tpr, fpr))
+        aucs.append(np.trapezoid(tpr, fpr))
     return float(np.mean(aucs))
 
 
