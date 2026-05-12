@@ -1,78 +1,144 @@
-# CSE432/532 — Speech Emotion Recognition Project
+# MiniLearn — API Reference
 
-## Project Structure
+A from-scratch ML library that mirrors the scikit-learn API, built for CSE432/532.
+All algorithms are implemented using only NumPy.
 
-```
-Project_CSE432-532/
-├── SER_Project/
-│   ├── data/                        # Downloaded RAVDESS audio + generated CSVs
-│   │   ├── Audio_Speech_Actors_01-24/   # Extracted from Zenodo zip
-│   │   ├── Audio_Song_Actors_01-24/     # Extracted from Zenodo zip
-│   │   ├── metadata.csv             # Generated in Week 4 (filename parsing)
-│   │   └── features.csv             # Generated in Week 5 (audio feature vectors)
-│   │
-│   ├── minilearn/                   # From-scratch ML library (implements sklearn API)
-│   │   ├── __init__.py              # Package init, exports all submodules
-│   │   ├── preprocessing.py         # StandardScaler, train_test_split
-│   │   ├── classifiers.py           # LogisticRegression, KNN, NaiveBayes, LinearSVM, DecisionTree
-│   │   ├── metrics.py               # accuracy, precision, recall, F1, confusion_matrix, AUC
-│   │   ├── validation.py            # StratifiedKFold, cross_val_score, GridSearchCV
-│   │   ├── clustering.py            # KMeans (Lloyd's algorithm)
-│   │   ├── decomposition.py         # PCA
-│   │   ├── regression.py            # LinearRegression, RidgeRegression, MSE, R²
-│   │   └── ann.py                   # MLP (feedforward, backprop, mini-batch SGD)
-│   │
-│   └── notebooks/                   # Weekly analysis notebooks
-│       ├── week4_data_exploration.ipynb        # Filename parsing, EDA, waveforms
-│       ├── week5_feature_extraction.ipynb      # MFCC, chroma, ZCR, spectral features → CSV
-│       ├── week6_regression.ipynb              # Linear/Ridge regression on audio features
-│       ├── week7_classification.ipynb          # LR, Naive Bayes, KNN — MiniLearn vs sklearn
-│       ├── week8_svm.ipynb                     # SVM with linear/RBF/poly kernels
-│       ├── week9_decision_trees.ipynb          # CART, Random Forest, AdaBoost
-│       ├── week10_model_validation.ipynb       # Stratified k-fold CV, hyperparameter tuning
-│       ├── week11_clustering.ipynb             # K-Means, ARI/NMI, PCA/t-SNE visualization
-│       ├── week12_dimensionality_reduction.ipynb  # PCA, scree plot, classifiers on PCA features
-│       └── week13_14_ann.ipynb                 # MiniLearn MLP + Keras/PyTorch DL model
-│
-├── Papers/                          # Reference papers (RAVDESS, etc.)
-├── .gitignore
-├── README.md
-└── setup_virtual_environment.md
-```
+## Installation
 
-## Quick Start
+MiniLearn is a local package — no pip install needed. Just ensure `SER_Project/` is on
+your path (each notebook does this via `sys.path.insert(0, os.path.abspath('..'))`).
 
-```bash
-# 1. Set up virtual environment (see setup_virtual_environment.md)
-pip install -r requirements.txt
+## Subpackages
 
-# 2. Download RAVDESS data from https://zenodo.org/records/1188976
-#    Extract into SER_Project/data/
-
-# 3. Work through notebooks in order (week4 → week5 → ... → week13_14)
-```
-
-## MiniLearn Usage
+### `minilearn.classifiers`
 
 ```python
-from minilearn.classifiers import LogisticRegression, KNearestNeighbors
+from minilearn.classifiers import (
+    LogisticRegression,   # Softmax multi-class via gradient descent
+    KNearestNeighbors,    # Lazy learner, Euclidean or Manhattan distance
+    GaussianNaiveBayes,   # Gaussian likelihood + Bayes' theorem
+    LinearSVM,            # Hinge-loss subgradient, binary classification
+    DecisionTree,         # CART with Gini or entropy splitting
+)
+```
+
+All classifiers share the same interface:
+
+```python
+clf.fit(X_train, y_train)
+clf.predict(X_test)          # class labels
+clf.predict_proba(X_test)    # probability estimates (where supported)
+clf.score(X_test, y_test)    # accuracy
+```
+
+### `minilearn.preprocessing`
+
+```python
 from minilearn.preprocessing import StandardScaler, train_test_split
-from minilearn.metrics import accuracy, f1_score, confusion_matrix
-from minilearn.validation import StratifiedKFold, cross_val_score
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=True
+)
 
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)   # fit on train only!
-X_test_scaled  = scaler.transform(X_test)
-
-clf = LogisticRegression(lr=0.01, n_iter=500)
-clf.fit(X_train_scaled, y_train)
-print(clf.score(X_test_scaled, y_test))
+X_test_scaled  = scaler.transform(X_test)        # never re-fit on test
 ```
 
-## Dataset
+### `minilearn.metrics`
 
-RAVDESS — Ryerson Audio-Visual Database of Emotional Speech and Song  
-Citation: Livingstone SR, Russo FA (2018). PLoS ONE 13(5): e0196391.  
-Download: https://zenodo.org/records/1188976 (audio-only zip files)
+```python
+from minilearn.metrics import (
+    accuracy,               # fraction correct
+    precision,              # TP / (TP + FP), macro or weighted
+    recall,                 # TP / (TP + FN), macro or weighted
+    f1_score,               # harmonic mean of precision and recall
+    confusion_matrix,       # (C x C) array, row=true / col=predicted
+    roc_auc_score,          # macro-averaged AUC, One-vs-Rest
+    classification_report,  # formatted per-class table
+)
+```
 
-**8 emotion classes:** neutral, calm, happy, sad, angry, fearful, disgust, surprised
+### `minilearn.model_selection`
+
+```python
+from minilearn.model_selection import StratifiedKFold, cross_val_score, GridSearchCV
+
+# Manual k-fold loop
+kfold = StratifiedKFold(n_splits=5, random_state=42)
+for train_idx, val_idx in kfold.split(X, y):
+    ...
+
+# Convenience wrapper
+scores = cross_val_score(clf, X, y, cv=5, scoring='accuracy')
+print(scores.mean(), '±', scores.std())
+
+# Hyperparameter search
+gs = GridSearchCV(clf, param_grid={'lr': [0.001, 0.01], 'n_iter': [500, 1000]}, cv=5)
+gs.fit(X_train, y_train)
+print(gs.best_params_, gs.best_score_)
+```
+
+### `minilearn.clustering`
+
+```python
+from minilearn.clustering import KMeans
+
+km = KMeans(k=8, max_iter=300, n_init=10, random_state=42)
+km.fit(X_pca)
+labels  = km.labels_           # cluster assignment per sample
+centers = km.cluster_centers_  # final centroid coordinates
+```
+
+### `minilearn.decomposition`
+
+```python
+from minilearn.decomposition import PCA
+
+pca = PCA(n_components=50)
+X_train_pca = pca.fit_transform(X_train)   # fit on train, transform train
+X_test_pca  = pca.transform(X_test)        # transform test with same axes
+
+print(pca.explained_variance_ratio_.cumsum())  # cumulative variance explained
+```
+
+### `minilearn.regression`
+
+```python
+from minilearn.regression import LinearRegression, RidgeRegression, mse, r2_score
+
+reg = LinearRegression(solver='analytic')   # or 'gradient_descent'
+reg.fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+print(r2_score(y_test, y_pred))
+
+ridge = RidgeRegression(alpha=1.0)
+ridge.fit(X_train, y_train)
+```
+
+### `minilearn.ann`
+
+```python
+from minilearn.ann import MLP
+
+mlp = MLP(
+    layer_sizes=[X_train.shape[1], 256, 128, 8],
+    activation='relu',
+    lr=0.001,
+    n_epochs=50,
+    batch_size=64,
+    l2_lambda=1e-4,
+)
+mlp.fit(X_train, y_train)
+y_pred = mlp.predict(X_test)
+print(mlp.score(X_test, y_test))
+
+import matplotlib.pyplot as plt
+plt.plot(mlp.loss_history_)   # training loss curve
+```
+
+## Design Notes
+
+- **No data leakage:** always `fit` scalers and PCA on training data only, then `transform` test data separately.
+- **sklearn compatibility:** all estimators follow the `fit` / `predict` / `score` convention so they can be swapped with sklearn equivalents for comparison.
+- **Reproducibility:** pass `random_state=42` consistently across all estimators and splits.

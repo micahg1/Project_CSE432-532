@@ -1,0 +1,16 @@
+1a. preprocessing.py - standardscaler function
+1b. week4- data exploration.ipynb
+
+2a. preprocessing.py - train_test_split function
+2b. week5- feature extraction.ipynb
+
+3a. metrics.py
+    accuracy, confusion_matrix, precision, recall, and f1_score
+3b. classifiers.py
+    GaussianNaiveBayes KNearestNeighbors LogisticRegression DecisionTree 
+3c. week6- regression, week7- classification
+
+week8- svm, week9- decision trees
+
+4a. validation.py, clustering.py, decomposition.py, and ann.py
+4b. week10-14 model validation to ann.ipynb
