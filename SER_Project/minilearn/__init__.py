@@ -7,9 +7,10 @@ every required algorithm using only NumPy/SciPy.  Import examples:
     from minilearn.classifiers import LogisticRegression, KNearestNeighbors
     from minilearn.preprocessing import StandardScaler, train_test_split
     from minilearn.metrics import accuracy, confusion_matrix
-    from minilearn.validation import StratifiedKFold
+    from minilearn.model_selection import StratifiedKFold, cross_val_score
     from minilearn.clustering import KMeans
     from minilearn.decomposition import PCA
+    from minilearn.regression import LinearRegression, RidgeRegression
     from minilearn.ann import MLP
 """
 
@@ -17,7 +18,7 @@ from . import (
     classifiers,
     metrics,
     preprocessing,
-    validation,
+    model_selection,
     clustering,
     decomposition,
     regression,
@@ -26,10 +27,10 @@ from . import (
 
 __version__ = "0.1.0"
 __all__ = [
-    "preprocessing",
     "classifiers",
     "metrics",
-    "validation",
+    "preprocessing",
+    "model_selection",
     "clustering",
     "decomposition",
     "regression",
